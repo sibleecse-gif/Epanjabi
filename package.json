@@ -1,0 +1,21 @@
+{
+  "name": "aagdoom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Aagdoom Fashion - Full stack e-commerce platform (Next.js + Express + PostgreSQL + Redis + Prisma)",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "db:migrate": "npm --prefix backend run prisma:push",
+    "db:seed": "npm --prefix backend run seed",
+    "setup": "npm run db:up && npm run db:migrate && npm run db:seed",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
