@@ -46,7 +46,7 @@ export class OrderService {
         err.statusCode = 409;
         throw err;
       }
-      if (item.product.stock < item.qty || item.qty > item.product.stock) {
+      if (item.qty > item.product.stock) {
         const err = new Error(`Insufficient stock for "${item.product.name}"`) as Error & { statusCode: number };
         err.statusCode = 409;
         throw err;
@@ -216,11 +216,11 @@ export class OrderService {
       String(date.getDate()).padStart(2, '0'),
     ].join('');
 
-    const count = await prisma.order.count({
-      where: { createdAt: { gte: new Date(date.setHours(0, 0, 0, 0)), lt: new Date(date.setHours(23, 59, 59, 999)) } },
-    });
-
-    return `AGD-${yyyymmdd}-${String(count + 1).padStart(4, '0')}`;
+    const prefix = `AGD-${yyyymmdd}-`;
+    const counterKey = `order:seq:${yyyymmdd}`;
+    const next = await redis.incr(counterKey);
+    await redis.expire(counterKey, 48 * 60 * 60);
+    return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
   private toBanglaNumber(num: number): string {

@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
                   value={o.status}
                   onChange={(e) => statusMutation.mutate({ id: o.id, status: e.target.value as OrderStatus })}
                   className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand-400 disabled:opacity-50"
-                  disabled={statusMutation.isPending}
+                  disabled={statusMutation.isPending && statusMutation.variables?.id === o.id}
                 >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>{orderStatusLabel(s)}</option>

@@ -27,10 +27,6 @@ export class UserService {
     const address = await prisma.address.create({
       data: { ...input, userId },
     });
-    await prisma.address.updateMany({
-      where: { userId, id: { not: address.id } },
-      data: { isDefault: false },
-    });
     return address;
   }
 

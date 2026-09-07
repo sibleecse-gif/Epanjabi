@@ -3,7 +3,6 @@ import { ApiResponse } from '../../utils/apiResponse';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { authenticate } from '../../middleware/auth.middleware';
 import { UserService } from './user.service';
-import type { Role } from '@prisma/client';
 
 const service = new UserService();
 
@@ -61,5 +60,3 @@ export const setDefaultAddress = [
     return ApiResponse.success(res, { address }, 'Default address set');
   }),
 ];
-
-export type { Role };

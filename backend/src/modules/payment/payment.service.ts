@@ -1,4 +1,4 @@
-import { PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 import axios from 'axios';
 import crypto from 'crypto';
 import { prisma } from '../../config/database';
@@ -97,7 +97,7 @@ export class PaymentService {
         data: {
           paymentStatus: PaymentStatus.APPROVED,
           transactionId: gatewayRef ?? order.transactionId,
-          status: 'CONFIRMED',
+          status: OrderStatus.CONFIRMED,
         },
       }),
     ]);

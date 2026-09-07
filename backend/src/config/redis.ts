@@ -112,6 +112,25 @@ class RedisClient {
     const n = await this.withClient((r) => r.exists(key), () => this.mem.exists(key));
     return n > 0;
   }
+
+  async incr(key: string): Promise<number> {
+    return this.withClient<number>((r) => r.incr(key), async () => {
+      const cur = await this.mem.get(key);
+      const next = (cur ? parseInt(cur, 10) : 0) + 1;
+      await this.mem.set(key, String(next), undefined);
+      return next;
+    });
+  }
+
+  async expire(key: string, seconds: number): Promise<void> {
+    await this.withClient(
+      (r) => r.expire(key, seconds) as Promise<unknown>,
+      async () => {
+        const entry = await this.mem.get(key);
+        if (entry !== null) await this.mem.set(key, entry, seconds);
+      }
+    );
+  }
 }
 
 export const redis = new RedisClient(env.REDIS_URL);

@@ -70,7 +70,8 @@ export class ProductService {
 
   async getFeatured() {
     const key = `${PRODUCT_CACHE_PREFIX}featured`;
-    const cached = await redis.get(key);
+    type CachedProducts = Prisma.ProductGetPayload<{ include: typeof productInclude }>[];
+    const cached = await redis.get<CachedProducts>(key);
     if (cached) return cached;
 
     const products = await prisma.product.findMany({
@@ -106,8 +107,7 @@ export class ProductService {
   }
 
   async create(input: CreateProductInput) {
-    const slug = input.name ? slugify(input.name) : await this.uniqueSlug(input.name);
-    const sku = `AGD-${Date.now().toString().slice(-6)}`;
+    const sku = `AGD-${Date.now().toString(36).toUpperCase().slice(-8)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const product = await prisma.product.create({
       data: {
@@ -177,7 +177,7 @@ export class ProductService {
 
   async listCategories() {
     const key = `${PRODUCT_CACHE_PREFIX}categories`;
-    const cached = await redis.get(key);
+    const cached = await redis.get<Prisma.CategoryGetPayload<{ include: { _count: { select: { products: { where: { isActive: true } } } } } }>[]>(key);
     if (cached) return cached;
     const categories = await prisma.category.findMany({
       where: { isActive: true },

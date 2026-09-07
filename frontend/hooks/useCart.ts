@@ -19,7 +19,7 @@ export interface AddCartInput {
 function toCartItem(item: ServerCartItem): CartItem {
   return {
     id: item.id,
-    userId: item.product.id,
+    userId: '',
     productId: item.product.id,
     name: item.product.name,
     price: item.product.price,

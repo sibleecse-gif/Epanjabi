@@ -25,7 +25,12 @@ export class CartService {
 
   async getCart(userId: string) {
     const key = `${CART_CACHE_PREFIX}${userId}`;
-    const cached = await redis.get(key);
+    interface CartResult {
+      items: Awaited<ReturnType<CartService['getDbCart']>>;
+      subtotal: number;
+      totalItems: number;
+    }
+    const cached = await redis.get<CartResult>(key);
     if (cached) return cached;
 
     const items = await this.getDbCart(userId);
@@ -49,18 +54,34 @@ export class CartService {
       throw err;
     }
 
+    if (product.stock <= 0) {
+      const err = new Error('Product is out of stock') as Error & { statusCode: number };
+      err.statusCode = 409;
+      throw err;
+    }
+
     const existing = await prisma.cart.findUnique({
       where: { userId_productId_size: { userId, productId: input.productId, size: input.size } },
     });
 
     let item;
     if (existing) {
-      const newQty = Math.min(existing.qty + input.qty, product.stock || existing.qty + input.qty);
+      const newQty = Math.min(existing.qty + input.qty, product.stock);
+      if (newQty < existing.qty + input.qty) {
+        const err = new Error('Requested quantity exceeds available stock') as Error & { statusCode: number };
+        err.statusCode = 409;
+        throw err;
+      }
       item = await prisma.cart.update({
         where: { id: existing.id },
         data: { qty: newQty },
       });
     } else {
+      if (input.qty > product.stock) {
+        const err = new Error('Requested quantity exceeds available stock') as Error & { statusCode: number };
+        err.statusCode = 409;
+        throw err;
+      }
       item = await prisma.cart.create({
         data: { userId, productId: input.productId, size: input.size, qty: input.qty },
       });
@@ -85,10 +106,23 @@ export class CartService {
       throw err;
     }
 
+    if (data.qty !== undefined) {
+      if (!product) {
+        const err = new Error('Product not found') as Error & { statusCode: number };
+        err.statusCode = 404;
+        throw err;
+      }
+      if (data.qty > product.stock) {
+        const err = new Error('Requested quantity exceeds available stock') as Error & { statusCode: number };
+        err.statusCode = 409;
+        throw err;
+      }
+    }
+
     const updated = await prisma.cart.update({
       where: { id: itemId },
       data: {
-        qty: data.qty !== undefined ? Math.min(data.qty, product?.stock ?? data.qty) : undefined,
+        qty: data.qty,
         size: data.size,
       },
     });

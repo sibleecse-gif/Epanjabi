@@ -21,7 +21,7 @@ interface Payment {
 
 export default function AdminPaymentsPage() {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<'' | PaymentStatus>('PENDING');
+  const [status, setStatus] = useState<'' | PaymentStatus>('');
 
   const { data, isLoading } = useQuery<{ payments: Payment[]; total: number }>({
     queryKey: ['admin', 'payments', status],

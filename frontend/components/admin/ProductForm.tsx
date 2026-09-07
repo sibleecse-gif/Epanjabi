@@ -53,7 +53,7 @@ export function ProductForm({ product, isEdit }: { product?: Product; isEdit?: b
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.categoryId) return toast.error('ক্যাটাগরি নির্বাচন করুন');
-    const price = parseInt(form.price, 10);
+    const price = parseFloat(form.price);
     if (!price || price <= 0) return toast.error('সঠিক দাম লিখুন');
     const sizes = form.sizes
       .split(',')
@@ -64,7 +64,7 @@ export function ProductForm({ product, isEdit }: { product?: Product; isEdit?: b
       name: form.name,
       categoryId: form.categoryId,
       price,
-      comparePrice: form.comparePrice ? parseInt(form.comparePrice, 10) : null,
+      comparePrice: form.comparePrice ? parseFloat(form.comparePrice) : null,
       description: form.description,
       sizes,
       stock: parseInt(form.stock, 10) || 0,

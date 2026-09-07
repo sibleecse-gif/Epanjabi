@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Trash2, Star } from 'lucide-react';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/auth-store';
 import { AddressForm } from '@/components/checkout/AddressForm';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -27,9 +28,10 @@ function AccountContent() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async () => (await api.patch('/users/profile', profile)).data,
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('প্রোফাইল আপডেট হয়েছে');
-      queryClient.invalidateQueries({ queryKey: ['auth'] });
+      const res = await api.get('/auth/me');
+      useAuthStore.getState().setUser(res.data.data.user);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -95,7 +97,7 @@ function AccountContent() {
 
             {showForm && (
               <div className="mt-4 rounded-xl bg-gray-50 p-4">
-                <AddressForm onSaved={() => setShowForm(false)} />
+                <AddressForm onSaved={() => { setShowForm(false); queryClient.invalidateQueries({ queryKey: ['addresses'] }); }} />
               </div>
             )}
 

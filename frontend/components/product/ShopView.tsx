@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -21,11 +21,21 @@ const SORTS = [
 export function ShopView({ categorySlug }: { categorySlug?: string }) {
   const searchParams = useSearchParams();
   const q = searchParams.get('q') ?? '';
-  const featured = searchParams.get('featured') === 'true';
+  const searchFeatured = searchParams.get('featured') === 'true';
+  const categoryParam = searchParams.get('category') ?? '';
+
+  const effectiveCategory = categorySlug ?? categoryParam;
+  const effectiveFeatured = searchFeatured;
 
   const [sort, setSort] = useState('newest');
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(categorySlug);
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(effectiveCategory || undefined);
   const [page, setPage] = useState(1);
+  const [featured, setFeatured] = useState(effectiveFeatured);
+
+  useEffect(() => {
+    setSelectedCategory(effectiveCategory || undefined);
+    setFeatured(effectiveFeatured);
+  }, [effectiveCategory, effectiveFeatured]);
 
   const { data: categories } = useQuery<{ categories: Category[] }>({
     queryKey: ['categories'],
@@ -67,7 +77,11 @@ export function ShopView({ categorySlug }: { categorySlug?: string }) {
                 className={`block rounded-lg px-3 py-2 text-sm font-medium transition ${
                   !selectedCategory && !featured ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50'
                 }`}
-                onClick={() => setSelectedCategory(undefined)}
+                onClick={() => {
+                  setSelectedCategory(undefined);
+                  setFeatured(false);
+                  setPage(1);
+                }}
               >
                 সব পণ্য
               </Link>
@@ -88,8 +102,8 @@ export function ShopView({ categorySlug }: { categorySlug?: string }) {
               <button
                 onClick={() => {
                   setSelectedCategory(undefined);
+                  setFeatured(!featured);
                   setPage(1);
-                  window.location.href = '/shop?featured=true';
                 }}
                 className={`block w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
                   featured ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50'

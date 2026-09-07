@@ -1,0 +1,57 @@
+# Render Blueprint — free tier deployment for aagdoom
+# Usage: push this repo to GitHub, then in Render Dashboard:
+#   New + → Blueprint → select the Epanjabi repo.
+# Render reads this file and provisions Postgres + the API service automatically.
+
+databases:
+  - name: aagdoom-postgres
+    plan: free
+    databaseName: aagdoom
+    user: aagdoom
+
+services:
+  # ---------- Backend API ----------
+  - type: web
+    name: aagdoom-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --ignore-scripts && npx prisma generate && npm run build
+    startCommand: npx prisma db push && node scripts/startup.js && node dist/app.js
+    healthCheckPath: /health
+    # Render auto-provisions a public URL like https://aagdoom-api.onrender.com
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_PREFIX
+        value: /api/v1
+      # Set to your Vercel frontend URL (e.g. https://your-app.vercel.app)
+      - key: CLIENT_URL
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aagdoom-postgres
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_EMAIL
+        value: admin@aagdoom.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      # Sandbox payment gateway (demo mode) unless you add live credentials
+      - key: SSLCOMMERZ_STORE_ID
+        value: ""
+      - key: SSLCOMMERZ_STORE_PASS
+        value: ""
+      - key: SSLCOMMERZ_SANDBOX
+        value: "true"

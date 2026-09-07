@@ -107,7 +107,8 @@ function OrdersContent() {
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={cancelMutation.isPending}
+                    loading={cancelMutation.isPending && cancelMutation.variables === order.id}
+                    disabled={cancelMutation.isPending && cancelMutation.variables !== order.id}
                     onClick={() => cancelMutation.mutate(order.id)}
                   >
                     অর্ডার বাতিল

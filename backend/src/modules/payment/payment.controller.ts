@@ -13,7 +13,11 @@ export const initiatePayment = asyncHandler(async (req: Request, res: Response) 
     include: { user: true },
   });
   if (!order) return ApiResponse.error(res, 'Order not found', 404);
-  const gatewayUrl = await service.initiate(order);
+  if (order.userId !== req.user!.id) return ApiResponse.error(res, 'Forbidden', 403);
+  const gatewayUrl = await service.initiate(
+    order,
+    order.user ? { name: order.user.name, email: order.user.email, phone: order.user.phone } : undefined
+  );
   return ApiResponse.success(res, { gatewayUrl });
 });
 
@@ -32,6 +36,7 @@ export const sandboxNotify = asyncHandler(async (req: Request, res: Response) =>
 
 export const paymentSuccess = asyncHandler(async (req: Request, res: Response) => {
   const orderId = (req.body.order_id ?? req.body.tran_id ?? '').toString().replace('AGD-', '');
+  if (!orderId) return ApiResponse.error(res, 'Missing order reference', 400);
   const ref = req.body.val_id ?? req.body.tran_id;
   // Sandbox mode: trust the callback. Live mode: verify with gateway explore API before this.
   await service.handleApproved(orderId, ref?.toString(), req.body);
@@ -40,19 +45,22 @@ export const paymentSuccess = asyncHandler(async (req: Request, res: Response) =
 
 export const paymentFail = asyncHandler(async (req: Request, res: Response) => {
   const orderId = (req.body.order_id ?? req.body.tran_id ?? '').toString().replace('AGD-', '');
+  if (!orderId) return ApiResponse.error(res, 'Missing order reference', 400);
   await service.handleFailed(orderId, req.body);
   return res.redirect(`${env.CLIENT_URL}/orders?payment=failed`);
 });
 
 export const paymentCancel = asyncHandler(async (req: Request, res: Response) => {
   const orderId = (req.body.order_id ?? req.body.tran_id ?? '').toString().replace('AGD-', '');
+  if (!orderId) return ApiResponse.error(res, 'Missing order reference', 400);
   await service.handleFailed(orderId, req.body);
   return res.redirect(`${env.CLIENT_URL}/orders?payment=cancelled`);
 });
 
 export const paymentIpn = asyncHandler(async (req: Request, res: Response) => {
   const status = (req.body.status ?? '').toString();
-  const orderId = (req.body.tran_id ?? ''.toString()).replace('AGD-', '');
+  const orderId = (req.body.tran_id?.toString() ?? '').replace('AGD-', '');
+  if (!orderId) return ApiResponse.error(res, 'Missing tran_id', 400);
 
   if (status === 'VALID' || status === 'VALIDATED') {
     const ref = req.body.val_id ?? req.body.tran_id;
@@ -64,11 +72,17 @@ export const paymentIpn = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const createBkashPayment = asyncHandler(async (req: Request, res: Response) => {
+  const order = await prisma.order.findUnique({ where: { id: req.body.orderId } });
+  if (!order) return ApiResponse.error(res, 'Order not found', 404);
+  if (order.userId !== req.user!.id) return ApiResponse.error(res, 'Forbidden', 403);
   const result = await service.createBkashSession(req.body.orderId);
   return ApiResponse.success(res, { ...result });
 });
 
 export const executeBkashPayment = asyncHandler(async (req: Request, res: Response) => {
+  const order = await prisma.order.findUnique({ where: { id: req.body.orderId } });
+  if (!order) return ApiResponse.error(res, 'Order not found', 404);
+  if (order.userId !== req.user!.id) return ApiResponse.error(res, 'Forbidden', 403);
   const result = await service.executeBkashSession(req.body.paymentID, req.body.orderId);
   return ApiResponse.success(res, { ...result });
 });

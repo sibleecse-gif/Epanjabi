@@ -20,7 +20,7 @@ const router = Router();
 
 router.get('/dashboard', dashboard);
 router.get('/orders', listOrders);
-router.patch('/orders/:id', validate(z.object({ status: z.string().min(1) })), updateOrderStatus);
+router.patch('/orders/:id', validate(z.object({ status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED']) })), updateOrderStatus);
 router.get('/payments', listPayments);
 router.patch('/payments/:id', validate(z.object({ action: z.enum(['approve', 'reject']) })), reviewPayment);
 router.get('/users', listUsers);

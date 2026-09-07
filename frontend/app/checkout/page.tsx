@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -41,6 +41,13 @@ function CheckoutContent() {
     queryFn: async () => (await api.get('/users/addresses')).data.data,
   });
   const addresses = data?.addresses ?? [];
+
+  useEffect(() => {
+    if (addresses.length > 0 && !selectedAddress) {
+      const defaultAddr = addresses.find((a) => a.isDefault);
+      setSelectedAddress(defaultAddr?.id ?? addresses[0].id);
+    }
+  }, [addresses, selectedAddress]);
 
   const placeOrderMutation = useMutation({
     mutationFn: async () =>
@@ -90,6 +97,7 @@ function CheckoutContent() {
                   onSaved={(a) => {
                     setSelectedAddress(a.id);
                     setShowForm(false);
+                    queryClient.invalidateQueries({ queryKey: ['addresses'] });
                   }}
                   isDefault={addresses.length === 0}
                   buttonLabel="ডেলিভারি ঠিকানা যোগ করুন"
